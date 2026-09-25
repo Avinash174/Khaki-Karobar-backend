@@ -11,6 +11,7 @@ router.post('/login', validateBody(loginSchema), login);
 router.post('/otp/request', validateBody(requestOtpSchema), requestOtp);
 router.post('/otp/verify', validateBody(verifyOtpSchema), verifyOtp);
 router.post('/refresh-token', validateBody(refreshTokenSchema), refreshToken);
+router.post('/refresh', validateBody(refreshTokenSchema), refreshToken);
 router.get('/me', authenticateJwt, me);
 router.post('/logout', authenticateJwt, logout);
 
