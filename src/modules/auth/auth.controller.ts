@@ -352,6 +352,68 @@ export async function me(req: AuthenticatedRequest, res: Response): Promise<any>
   return sendSuccess(res, 'Profile retrieved successfully', user);
 }
 
+export async function updateProfile(req: AuthenticatedRequest, res: Response): Promise<any> {
+  const userId = req.user?.userId;
+  const { name, email, avatar } = req.body;
+
+  if (!userId) {
+    return sendError(res, 'Unauthorized', 'UNAUTHORIZED', 401);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(name ? { name } : {}),
+      ...(email !== undefined ? { email } : {}),
+      ...(avatar !== undefined ? { avatar } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      role: true,
+      avatar: true,
+    },
+  });
+
+  return sendSuccess(res, 'Profile updated successfully', updatedUser);
+}
+
+export async function changePassword(req: AuthenticatedRequest, res: Response): Promise<any> {
+  const userId = req.user?.userId;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!userId) {
+    return sendError(res, 'Unauthorized', 'UNAUTHORIZED', 401);
+  }
+
+  if (!currentPassword || !newPassword) {
+    return sendError(res, 'Current password and new password are required', 'MISSING_FIELDS', 400);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return sendError(res, 'User not found', 'USER_NOT_FOUND', 404);
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isMatch) {
+    return sendError(res, 'Current password is incorrect', 'INVALID_CREDENTIALS', 400);
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newHash },
+  });
+
+  return sendSuccess(res, 'Password changed successfully');
+}
+
 export async function logout(req: AuthenticatedRequest, res: Response): Promise<any> {
   const { refreshToken } = req.body;
   if (refreshToken) {

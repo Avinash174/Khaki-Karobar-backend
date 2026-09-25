@@ -20,8 +20,12 @@ export async function createPayment(req: AuthenticatedRequest, res: Response): P
     notes,
   } = req.body;
 
+  let paymentType = type;
+  if (paymentType === 'IN' || (!paymentType && partyType === 'CUSTOMER')) paymentType = PaymentType.RECEIVED;
+  if (paymentType === 'OUT' || (!paymentType && partyType === 'SUPPLIER')) paymentType = PaymentType.MADE;
+
   const payAmount = Number(amount);
-  if (!type || !partyType || !payAmount || payAmount <= 0) {
+  if (!paymentType || !partyType || !payAmount || payAmount <= 0) {
     return sendError(res, 'Valid type, partyType, and positive amount are required', 'INVALID_INPUT', 400);
   }
 
