@@ -18,7 +18,7 @@ async function runTests() {
     // 1. Health check
     console.log('1️⃣ Testing /api/health...');
     const healthRes = await fetch('http://localhost:5099/api/health');
-    const healthJson = await healthRes.json();
+    const healthJson = (await healthRes.json()) as any;
     if (!healthRes.ok || healthJson.status !== 'healthy') throw new Error('Health check failed');
     console.log('  ✅ Health check passed:', healthJson.service);
 
@@ -67,8 +67,9 @@ async function runTests() {
     });
     const prodJson = (await prodRes.json()) as any;
     if (!prodRes.ok || prodJson.data.items.length === 0) throw new Error('Product list failed');
-    productId = prodJson.data.items[0].id;
-    console.log(`  ✅ Retrieved ${prodJson.data.items.length} products. First product: ${prodJson.data.items[0].name} (Stock: ${prodJson.data.items[0].currentStock})`);
+    const targetProduct = prodJson.data.items.find((p: any) => !p.isService) || prodJson.data.items[0];
+    productId = targetProduct.id;
+    console.log(`  ✅ Retrieved ${prodJson.data.items.length} products. Selected physical product: ${targetProduct.name} (Stock: ${targetProduct.currentStock})`);
 
     // 5. Customer Creation & Search
     console.log('5️⃣ Testing Customer Module...');
@@ -97,7 +98,7 @@ async function runTests() {
 
     // 6. Create Real Invoice (With GST calculation & stock deduction)
     console.log('6️⃣ Testing Invoice Creation (Sales + GST + Stock reduction)...');
-    const initialProductStock = Number(prodJson.data.items[0].currentStock);
+    const initialProductStock = Number(targetProduct.currentStock);
     const invoiceRes = await fetch(`${baseUrl}/invoices`, {
       method: 'POST',
       headers: {
